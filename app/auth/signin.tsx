@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/Button';
@@ -27,86 +27,88 @@ export default function SignInScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue</Text>
-        </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView 
+        style={styles.container} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>Sign in to continue</Text>
+          </View>
 
-        <View style={styles.roleSelector}>
-          <TouchableOpacity
-            style={[styles.roleButton, role === 'customer' && styles.roleButtonActive]}
-            onPress={() => setRole('customer')}
-          >
-            <Text style={[styles.roleButtonText, role === 'customer' && styles.roleButtonTextActive]}>
-              Customer
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.roleButton, role === 'delivery' && styles.roleButtonActive]}
-            onPress={() => setRole('delivery')}
-          >
-            <Text style={[styles.roleButtonText, role === 'delivery' && styles.roleButtonTextActive]}>
-              Delivery Partner
-            </Text>
-          </TouchableOpacity>
-        </View>
+          <View style={styles.roleSelector}>
+            <TouchableOpacity
+              style={[styles.roleButton, role === 'customer' && styles.roleButtonActive]}
+              onPress={() => setRole('customer')}
+            >
+              <Text style={[styles.roleButtonText, role === 'customer' && styles.roleButtonTextActive]}>
+                Customer
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.roleButton, role === 'delivery' && styles.roleButtonActive]}
+              onPress={() => setRole('delivery')}
+            >
+              <Text style={[styles.roleButtonText, role === 'delivery' && styles.roleButtonTextActive]}>
+                Delivery Partner
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="john@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="john@example.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordRow}>
+                <TextInput
+                  style={styles.passwordInput}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="••••••••"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  onPress={() => setShowPassword((v) => !v)}
+                  style={styles.eyeButton}
+                >
+                  {showPassword ? <Eye color="#2D3748" size={20} /> : <EyeOff color="#2D3748" size={20} />}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <Button 
+              title="Sign In" 
+              onPress={handleSignIn} 
+              loading={loading}
+              size="large"
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordRow}>
-              <TextInput
-                style={styles.passwordInput}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                onPress={() => setShowPassword((v) => !v)}
-                style={styles.eyeButton}
-              >
-                {showPassword ? <Eye color="#2D3748" size={20} /> : <EyeOff color="#2D3748" size={20} />}
-              </TouchableOpacity>
-            </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Don&apos;t have an account?</Text>
+            <TouchableOpacity onPress={() => router.push('/auth/signup')}>
+              <Text style={styles.linkText}>Sign Up</Text>
+            </TouchableOpacity>
           </View>
-
-          <Button 
-            title="Sign In" 
-            onPress={handleSignIn} 
-            loading={loading}
-            size="large"
-          />
         </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Don&apos;t have an account?</Text>
-          <TouchableOpacity onPress={() => router.push('/auth/signup')}>
-            <Text style={styles.linkText}>Sign Up</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 

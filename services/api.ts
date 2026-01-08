@@ -1,16 +1,30 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { Restaurant, MenuItem, Order, DeliveryOrder, Address, UserRole, User } from '@/types';
 
-const defaultBase = Platform.OS === 'android'
-  ? 'http://192.168.110.3:4003/api'
-  : 'http://localhost:4003/api';
-const envBase = process.env.EXPO_PUBLIC_API_BASE_URL || process.env.EXPO_PUBLIC_API_URL || '';
-const adjustedEnvBase =
-  Platform.OS === 'android' && envBase.includes('localhost')
-    ? envBase.replace('localhost', '10.0.2.2')
-    : envBase;
-const BASE_URL = adjustedEnvBase || defaultBase;
+const getBaseUrl = () => {
+  // 1. Check environment variable first
+  const envBase = process.env.EXPO_PUBLIC_API_BASE_URL || process.env.EXPO_PUBLIC_API_URL;
+  if (envBase) {
+    return Platform.OS === 'android' && envBase.includes('localhost')
+      ? envBase.replace('localhost', '10.0.2.2')
+      : envBase;
+  }
+
+  // 2. Dynamic host detection for Expo Go (Development)
+  if (Constants.expoConfig?.hostUri) {
+    const host = Constants.expoConfig.hostUri.split(':')[0];
+    return `http://${host}:4003/api`;
+  }
+
+  // 3. Fallbacks
+  return Platform.OS === 'android'
+    ? 'http://10.0.2.2:4003/api' // Android Emulator loopback
+    : 'http://localhost:4003/api'; // iOS Simulator / Web
+};
+
+const BASE_URL = getBaseUrl();
 console.log('API BASE URL', BASE_URL);
 
 async function getToken(): Promise<string | null> {
@@ -359,6 +373,17 @@ export const apiService = {
         body: JSON.stringify({ driverId: user?.id, lat: latitude, lng: longitude }),
       });
     },
+    getStats: async (): Promise<any> => {
+      const userStr = await AsyncStorage.getItem('user');
+      const user = userStr ? (JSON.parse(userStr) as User) : null;
+      if (!user) throw new Error('Not logged in');
+      return request(`/delivery/stats/${user.id}`);
+    },
+    completeOrder: async (orderId: string): Promise<void> => {
+      await request(`/delivery/complete/${orderId}`, {
+        method: 'POST'
+      });
+    }
   },
 
   group: {

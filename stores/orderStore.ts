@@ -4,15 +4,19 @@ import { Order, OrderStatus } from '@/types';
 interface OrderState {
   orders: Order[];
   activeOrder: Order | null;
+  isLoading: boolean;
+  error: string | null;
   addOrder: (order: Order) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   setActiveOrder: (order: Order | null) => void;
-  loadOrders: (userId: string) => void;
+  loadOrders: (userId: string) => Promise<void>;
 }
 
 export const useOrderStore = create<OrderState>((set) => ({
   orders: [],
   activeOrder: null,
+  isLoading: false,
+  error: null,
 
   addOrder: (order) => {
     set((state) => ({
@@ -34,7 +38,13 @@ export const useOrderStore = create<OrderState>((set) => ({
 
   setActiveOrder: (order) => set({ activeOrder: order }),
 
-  loadOrders: (userId) => {
-    console.log('Loading orders for user:', userId);
+  loadOrders: async (userId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const orders = await apiService.orders.getUserOrders(userId);
+      set({ orders, isLoading: false });
+    } catch (error) {
+      set({ error: (error as Error).message, isLoading: false });
+    }
   },
 }));

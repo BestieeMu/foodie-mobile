@@ -8,7 +8,7 @@ interface DeliveryState {
   stats: DeliveryStats;
   isOnline: boolean;
   acceptOrder: (order: DeliveryOrder) => Promise<void>;
-  completeDelivery: () => void;
+  completeDelivery: () => Promise<void>;
   updateDriverLocation: (latitude: number, longitude: number) => Promise<void>;
   loadAvailableOrders: () => Promise<void>;
   setActiveDeliveryStatus: (status: OrderStatus) => void;

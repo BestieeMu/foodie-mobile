@@ -1,142 +1,138 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
+import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react-native';
 import { Button } from '@/components/Button';
-import { Eye, EyeOff } from 'lucide-react-native';
+import { UserRole } from '@/types';
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const { role: roleParam } = useLocalSearchParams<{ role?: 'customer' | 'delivery' }>();
+  const params = useLocalSearchParams();
   const signup = useAuthStore((state) => state.signup);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'customer' | 'delivery'>(roleParam === 'delivery' ? 'delivery' : 'customer');
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Default to customer, but allow overriding via params if we came from a specific flow
+  const [role, setRole] = useState<UserRole>((params.role as UserRole) || 'customer');
 
   const handleSignUp = async () => {
-    setLoading(true);
+    if (!name || !email || !phone || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
     try {
-      await signup({ email, password, name, phone, role });
-      if (role === 'delivery') {
-        router.replace('/delivery');
-      } else {
-        router.replace('/customer');
-      }
+      await signup(name, email, password, phone, role);
+      // Navigation is handled by auth listener in _layout
     } catch (error) {
-      console.error('Sign up failed:', error);
-    } finally {
-      setLoading(false);
+      Alert.alert('Sign Up Failed', (error as Error).message);
     }
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Create Your Account</Text>
-          <Text style={styles.subtitle}>Sign up to get started</Text>
-        </View>
-
-        <View style={styles.roleSelector}>
-          <TouchableOpacity
-            style={[styles.roleButton, role === 'customer' && styles.roleButtonActive]}
-            onPress={() => setRole('customer')}
-          >
-            <Text style={[styles.roleButtonText, role === 'customer' && styles.roleButtonTextActive]}>
-              Customer
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.roleButton, role === 'delivery' && styles.roleButtonActive]}
-            onPress={() => setRole('delivery')}
-          >
-            <Text style={[styles.roleButtonText, role === 'delivery' && styles.roleButtonTextActive]}>
-              Delivery Partner
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="john@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Join Foodie today</Text>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Full Name</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="John Doe"
-              autoCapitalize="words"
-            />
+          {/* Role Selector */}
+          <View style={styles.roleSelector}>
+            <TouchableOpacity
+              style={[styles.roleOption, role === 'customer' && styles.roleOptionActive]}
+              onPress={() => setRole('customer')}
+            >
+              <Text style={[styles.roleText, role === 'customer' && styles.roleTextActive]}>Customer</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.roleOption, role === 'delivery' && styles.roleOptionActive]}
+              onPress={() => setRole('delivery')}
+            >
+              <Text style={[styles.roleText, role === 'delivery' && styles.roleTextActive]}>Driver</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Phone Number</Text>
-            <TextInput
-              style={styles.input}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="0801 234 5678"
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordRow}>
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <User size={20} color="#A0AEC0" style={styles.inputIcon} />
               <TextInput
-                style={styles.passwordInput}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                secureTextEntry={!showPassword}
+                style={styles.input}
+                placeholder="Full Name"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Mail size={20} color="#A0AEC0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email Address"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
                 autoCapitalize="none"
               />
-              <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                onPress={() => setShowPassword((v) => !v)}
-                style={styles.eyeButton}
-              >
-                {showPassword ? <Eye color="#2D3748" size={20} /> : <EyeOff color="#2D3748" size={20} />}
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Phone size={20} color="#A0AEC0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Phone Number"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Lock size={20} color="#A0AEC0" style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                {showPassword ? (
+                  <EyeOff size={20} color="#A0AEC0" />
+                ) : (
+                  <Eye size={20} color="#A0AEC0" />
+                )}
               </TouchableOpacity>
             </View>
+
+            <Button 
+              title="Sign Up" 
+              onPress={handleSignUp} 
+              loading={isLoading}
+              size="large"
+            />
           </View>
 
-          <Button 
-            title="Create Account" 
-            onPress={handleSignUp} 
-            loading={loading}
-            size="large"
-          />
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account?</Text>
-          <TouchableOpacity onPress={() => router.push('/auth/signin')}>
-            <Text style={styles.linkText}>Sign In</Text>
-          </TouchableOpacity
-          >
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => router.push('/auth/signin')}>
+              <Text style={styles.footerLink}>Sign In</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
