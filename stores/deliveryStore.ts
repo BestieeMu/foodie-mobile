@@ -11,6 +11,7 @@ interface DeliveryState {
   completeDelivery: () => Promise<void>;
   updateDriverLocation: (latitude: number, longitude: number) => Promise<void>;
   loadAvailableOrders: () => Promise<void>;
+  loadStats: () => Promise<void>;
   setActiveDeliveryStatus: (status: OrderStatus) => void;
   setOnline: (online: boolean) => void;
   toggleOnline: () => void;

@@ -23,7 +23,7 @@ export default function SignInScreen() {
     } catch (error: any) {
       // Check for unverified account error code
       if (error?.message?.includes('UNVERIFIED') || (error as any)?.code === 'UNVERIFIED') {
-        router.push({ pathname: '/auth/verify', params: { email } });
+        router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
         return;
       }
       Alert.alert('Login Failed', (error as Error).message);

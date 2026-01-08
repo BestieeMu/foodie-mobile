@@ -397,6 +397,11 @@ export const apiService = {
       });
     },
     completeOrder: async (orderId: string): Promise<void> => {
+      await request(`/delivery/pickup/${orderId}`, {
+        method: 'POST'
+      });
+    },
+    completeOrder: async (orderId: string): Promise<void> => {
       await request(`/delivery/complete/${orderId}`, {
         method: 'POST'
       });
