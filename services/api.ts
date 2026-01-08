@@ -129,6 +129,18 @@ export const apiService = {
         body: JSON.stringify({ refreshToken }),
       });
     },
+    verifyOtp: async (email: string, otp: string): Promise<{ user: User; accessToken: string; refreshToken?: string }> => {
+      return request('/auth/verify-otp', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp }),
+      });
+    },
+    resendOtp: async (email: string): Promise<void> => {
+      await request('/auth/resend-otp', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    },
   },
   health: {
     check: async (): Promise<{ ok: boolean; env: string }> => {

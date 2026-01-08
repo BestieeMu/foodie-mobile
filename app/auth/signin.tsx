@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { Button } from '@/components/Button';
@@ -19,8 +19,14 @@ export default function SignInScreen() {
     setLoading(true);
     try {
       await login(email, password, role);
-    } catch (error) {
-      console.error('Sign in failed:', error);
+      // Navigation is handled by auth listener in _layout
+    } catch (error: any) {
+      // Check for unverified account error code
+      if (error?.message?.includes('UNVERIFIED') || (error as any)?.code === 'UNVERIFIED') {
+        router.push({ pathname: '/auth/verify', params: { email } });
+        return;
+      }
+      Alert.alert('Login Failed', (error as Error).message);
     } finally {
       setLoading(false);
     }

@@ -13,6 +13,8 @@ interface AuthState {
   refreshToken?: string;
   login: (email: string, password: string, role: UserRole) => Promise<void>;
   signup: (data: { email: string; password: string; name: string; phone: string; role: UserRole }) => Promise<void>;
+  verifyOtp: (email: string, otp: string) => Promise<void>;
+  resendOtp: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   completeOnboarding: () => Promise<void>;
   loadUser: () => Promise<void>;
@@ -82,7 +84,13 @@ export const useAuthStore = create<AuthState>((set) => ({
       console.log('Push token error:', e);
     }
 
-    const { user, accessToken, refreshToken } = await apiService.auth.signup({ ...data, pushToken });
+    const res = await apiService.auth.signup({ ...data, pushToken });
+    
+    if ((res as any).requiresVerification) {
+      return;
+    }
+
+    const { user, accessToken, refreshToken } = res;
     const normalizedUser = { ...user, role: (user.role as any) === 'driver' ? 'delivery' : user.role } as User;
     await AsyncStorage.multiSet([
       ['user', JSON.stringify(normalizedUser)],
@@ -90,6 +98,21 @@ export const useAuthStore = create<AuthState>((set) => ({
       ['refreshToken', refreshToken || ''],
     ]);
     set({ user: normalizedUser, isAuthenticated: true, accessToken, refreshToken });
+  },
+
+  verifyOtp: async (email: string, otp: string) => {
+    const { user, accessToken, refreshToken } = await apiService.auth.verifyOtp(email, otp);
+    const normalizedUser = { ...user, role: (user.role as any) === 'driver' ? 'delivery' : user.role } as User;
+    await AsyncStorage.multiSet([
+      ['user', JSON.stringify(normalizedUser)],
+      ['accessToken', accessToken],
+      ['refreshToken', refreshToken || ''],
+    ]);
+    set({ user: normalizedUser, isAuthenticated: true, accessToken, refreshToken });
+  },
+
+  resendOtp: async (email: string) => {
+    await apiService.auth.resendOtp(email);
   },
 
   logout: async () => {

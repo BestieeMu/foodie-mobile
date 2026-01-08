@@ -29,19 +29,24 @@ export default function SignUpScreen() {
 
     try {
       await signup(name, email, password, phone, role);
-      // Navigation is handled by auth listener in _layout
+      // If signup is successful (and requires verification), navigate to OTP screen
+      router.push({ pathname: '/auth/verify', params: { email } });
     } catch (error) {
       Alert.alert('Sign Up Failed', (error as Error).message);
     }
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Join Foodie today</Text>
@@ -131,8 +136,8 @@ export default function SignUpScreen() {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
