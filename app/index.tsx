@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, useWindowDimensions, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { UtensilsCrossed, MapPin, TrendingUp } from 'lucide-react-native';
@@ -28,6 +28,43 @@ const SLIDES = [
   }
 ];
 
+const Indicator = ({ isActive }: { isActive: boolean }) => {
+  const widthAnim = useRef(new Animated.Value(isActive ? 32 : 8)).current;
+  const colorAnim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(widthAnim, {
+        toValue: isActive ? 32 : 8,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+      Animated.timing(colorAnim, {
+        toValue: isActive ? 1 : 0,
+        duration: 300,
+        useNativeDriver: false,
+      })
+    ]).start();
+  }, [isActive]);
+
+  const backgroundColor = colorAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#E2E8F0', '#FF6B35']
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.indicator,
+        {
+          width: widthAnim,
+          backgroundColor,
+        }
+      ]}
+    />
+  );
+};
+
 export default function WelcomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -43,12 +80,8 @@ export default function WelcomeScreen() {
           animated: true,
         });
         setCurrentIndex(prev => prev + 1);
-      } else {
-        // Optional: Loop back to start or stop
-        // flatListRef.current?.scrollToIndex({ index: 0, animated: true });
-        // setCurrentIndex(0);
       }
-    }, 4000); // 4 seconds
+    }, 4000); 
 
     return () => clearInterval(interval);
   }, [currentIndex]);
@@ -112,13 +145,7 @@ export default function WelcomeScreen() {
         {/* Indicators */}
         <View style={styles.indicatorContainer}>
           {SLIDES.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.indicator,
-                currentIndex === index ? styles.indicatorActive : styles.indicatorInactive
-              ]}
-            />
+            <Indicator key={index} isActive={currentIndex === index} />
           ))}
         </View>
 
@@ -203,14 +230,6 @@ const styles = StyleSheet.create({
   indicator: {
     height: 8,
     borderRadius: 4,
-  },
-  indicatorActive: {
-    width: 32,
-    backgroundColor: '#FF6B35',
-  },
-  indicatorInactive: {
-    width: 8,
-    backgroundColor: '#E2E8F0',
   },
   buttonContainer: {
     marginBottom: 20,
