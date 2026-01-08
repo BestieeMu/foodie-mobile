@@ -27,28 +27,28 @@ function RootLayoutNav() {
     const inCustomer = segments[0] === 'customer';
     const inDelivery = segments[0] === 'delivery';
 
-    if (!hasCompletedOnboarding && segments[0] !== 'onboarding') {
-      router.replace('/onboarding');
-    } else if (!isAuthenticated && !inAuthGroup && segments[0] !== 'onboarding') {
-      router.replace('/auth/signin');
-    } else if (isAuthenticated && (inAuthGroup || segments[0] === 'onboarding')) {
-      if (user?.role === 'delivery') {
-        router.replace('/delivery');
-      } else {
-        router.replace('/customer');
+    // If user is authenticated
+    if (isAuthenticated) {
+      // If user tries to access auth screens or the welcome screen (root), redirect to dashboard
+      if (inAuthGroup || segments.length === 0) {
+        if (user?.role === 'delivery') {
+          router.replace('/delivery');
+        } else {
+          router.replace('/customer');
+        }
       }
-    } else if (isAuthenticated && !inCustomer && !inDelivery) {
-      if (user?.role === 'delivery') {
-        router.replace('/delivery');
-      } else {
-        router.replace('/customer');
+    } else {
+      // If user is NOT authenticated
+      // If user tries to access protected routes, redirect to welcome or signin
+      if (inCustomer || inDelivery) {
+        router.replace('/');
       }
     }
-  }, [isAuthenticated, isLoading, hasCompletedOnboarding, segments, user, router]);
+  }, [isAuthenticated, isLoading, segments, user, router]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="auth/signin" options={{ headerShown: false }} />
       <Stack.Screen name="auth/signup" options={{ headerShown: false }} />
       <Stack.Screen name="customer" options={{ headerShown: false }} />
