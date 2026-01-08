@@ -391,6 +391,11 @@ export const apiService = {
       if (!user) throw new Error('Not logged in');
       return request(`/delivery/stats/${user.id}`);
     },
+    pickupOrder: async (orderId: string): Promise<void> => {
+      await request(`/delivery/pickup/${orderId}`, {
+        method: 'POST'
+      });
+    },
     completeOrder: async (orderId: string): Promise<void> => {
       await request(`/delivery/complete/${orderId}`, {
         method: 'POST'

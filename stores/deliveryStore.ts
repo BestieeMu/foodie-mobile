@@ -26,17 +26,18 @@ export const useDeliveryStore = create<DeliveryState>((set, get) => ({
     todayEarnings: 0,
     averageRating: 0,
     completionRate: 0,
-    weeklyEarnings: [
-      { day: 'Mon', amount: 42.5 },
-      { day: 'Tue', amount: 58.2 },
-      { day: 'Wed', amount: 35.0 },
-      { day: 'Thu', amount: 73.4 },
-      { day: 'Fri', amount: 85.7 },
-      { day: 'Sat', amount: 92.1 },
-      { day: 'Sun', amount: 50.3 },
-    ],
+    weeklyEarnings: [],
   },
   isOnline: true,
+
+  loadStats: async () => {
+    try {
+      const stats = await apiService.delivery.getStats();
+      set({ stats });
+    } catch (e) {
+      console.log('Failed to load stats', e);
+    }
+  },
 
   acceptOrder: async (order) => {
     const accepted = await apiService.delivery.acceptOrder(order.id);

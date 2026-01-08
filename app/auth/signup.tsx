@@ -43,7 +43,7 @@ export default function SignUpScreen() {
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView 
-          contentContainerStyle={styles.scrollContent} 
+          contentContainerStyle={styles.content} 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
