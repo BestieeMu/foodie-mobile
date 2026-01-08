@@ -1,0 +1,94 @@
+import { create } from 'zustand';
+import { DeliveryOrder, DeliveryStats, OrderStatus } from '@/types';
+import { apiService } from '@/services/api';
+
+interface DeliveryState {
+  availableOrders: DeliveryOrder[];
+  activeDelivery: DeliveryOrder | null;
+  stats: DeliveryStats;
+  isOnline: boolean;
+  acceptOrder: (order: DeliveryOrder) => Promise<void>;
+  completeDelivery: () => void;
+  updateDriverLocation: (latitude: number, longitude: number) => Promise<void>;
+  loadAvailableOrders: () => Promise<void>;
+  setActiveDeliveryStatus: (status: OrderStatus) => void;
+  setOnline: (online: boolean) => void;
+  toggleOnline: () => void;
+}
+
+export const useDeliveryStore = create<DeliveryState>((set, get) => ({
+  availableOrders: [],
+  activeDelivery: null,
+  stats: {
+    totalDeliveries: 0,
+    todayDeliveries: 0,
+    totalEarnings: 0,
+    todayEarnings: 0,
+    averageRating: 0,
+    completionRate: 0,
+    weeklyEarnings: [
+      { day: 'Mon', amount: 42.5 },
+      { day: 'Tue', amount: 58.2 },
+      { day: 'Wed', amount: 35.0 },
+      { day: 'Thu', amount: 73.4 },
+      { day: 'Fri', amount: 85.7 },
+      { day: 'Sat', amount: 92.1 },
+      { day: 'Sun', amount: 50.3 },
+    ],
+  },
+  isOnline: true,
+
+  acceptOrder: async (order) => {
+    const accepted = await apiService.delivery.acceptOrder(order.id);
+    set((state) => ({
+      availableOrders: state.availableOrders.filter(o => o.id !== order.id),
+      activeDelivery: accepted || order,
+    }));
+  },
+
+  setActiveDeliveryStatus: (status) => {
+    set((state) => ({
+      activeDelivery: state.activeDelivery ? { ...state.activeDelivery, status, updatedAt: new Date() } : null,
+    }));
+  },
+
+  completeDelivery: () => {
+    set((state) => {
+      const earnings = state.activeDelivery?.earnings || 0;
+      const dayIndex = new Date().getDay();
+      const labelMap = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const todayLabel = labelMap[dayIndex];
+      const updatedWeekly = state.stats.weeklyEarnings.map((d) =>
+        d.day === todayLabel ? { ...d, amount: Number((d.amount + earnings).toFixed(2)) } : d
+      );
+
+      return {
+        stats: {
+          ...state.stats,
+          totalDeliveries: state.stats.totalDeliveries + 1,
+          todayDeliveries: state.stats.todayDeliveries + 1,
+          totalEarnings: Number((state.stats.totalEarnings + earnings).toFixed(2)),
+          todayEarnings: Number((state.stats.todayEarnings + earnings).toFixed(2)),
+          weeklyEarnings: updatedWeekly,
+        },
+        activeDelivery: null,
+      };
+    });
+  },
+
+  updateDriverLocation: async (latitude, longitude) => {
+    await apiService.delivery.updateDriverLocation(latitude, longitude);
+    set((state) => ({
+      activeDelivery: state.activeDelivery
+        ? { ...state.activeDelivery, driverLocation: { latitude, longitude }, updatedAt: new Date() }
+        : null,
+    }));
+  },
+
+  loadAvailableOrders: async () => {
+    const queue = await apiService.delivery.getAvailableOrders();
+    set({ availableOrders: queue });
+  },
+  setOnline: (online: boolean) => set({ isOnline: online }),
+  toggleOnline: () => set({ isOnline: !get().isOnline }),
+}));
