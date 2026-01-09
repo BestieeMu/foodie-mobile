@@ -28,7 +28,7 @@ export default function SignUpScreen() {
     }
 
     try {
-      await signup(name, email, password, phone, role);
+      await signup({ name, email, password, phone, role });
       // If signup is successful (and requires verification), navigate to OTP screen
       router.push({ pathname: '/auth/verify', params: { email } });
     } catch (error) {
