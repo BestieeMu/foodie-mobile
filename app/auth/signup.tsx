@@ -242,4 +242,21 @@ const styles = StyleSheet.create({
     color: '#FF6B35',
     fontWeight: '600' as const,
   },
+  roleOption: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  roleOptionActive: {
+    backgroundColor: '#FF6B35',
+  },
+  roleText: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: '#718096',
+  },
+  roleTextActive: {
+    color: '#FFFFFF',
+  },
 });

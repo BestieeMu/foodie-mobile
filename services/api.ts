@@ -3,6 +3,10 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { Restaurant, MenuItem, Order, DeliveryOrder, Address, UserRole, User } from '@/types';
 
+const defaultBase = Platform.OS === 'android'
+  ? 'http://10.0.2.2:4003/api'
+  : 'http://localhost:4003/api';
+
 const getBaseUrl = () => {
   // 1. Check environment variable first
   const envBase = process.env.EXPO_PUBLIC_API_BASE_URL || process.env.EXPO_PUBLIC_API_URL;
@@ -392,11 +396,6 @@ export const apiService = {
       return request(`/delivery/stats/${user.id}`);
     },
     pickupOrder: async (orderId: string): Promise<void> => {
-      await request(`/delivery/pickup/${orderId}`, {
-        method: 'POST'
-      });
-    },
-    completeOrder: async (orderId: string): Promise<void> => {
       await request(`/delivery/pickup/${orderId}`, {
         method: 'POST'
       });

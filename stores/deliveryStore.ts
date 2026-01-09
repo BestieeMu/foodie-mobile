@@ -54,28 +54,33 @@ export const useDeliveryStore = create<DeliveryState>((set, get) => ({
     }));
   },
 
-  completeDelivery: () => {
-    set((state) => {
-      const earnings = state.activeDelivery?.earnings || 0;
-      const dayIndex = new Date().getDay();
-      const labelMap = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-      const todayLabel = labelMap[dayIndex];
-      const updatedWeekly = state.stats.weeklyEarnings.map((d) =>
-        d.day === todayLabel ? { ...d, amount: Number((d.amount + earnings).toFixed(2)) } : d
-      );
-
-      return {
-        stats: {
-          ...state.stats,
-          totalDeliveries: state.stats.totalDeliveries + 1,
-          todayDeliveries: state.stats.todayDeliveries + 1,
-          totalEarnings: Number((state.stats.totalEarnings + earnings).toFixed(2)),
-          todayEarnings: Number((state.stats.todayEarnings + earnings).toFixed(2)),
-          weeklyEarnings: updatedWeekly,
-        },
-        activeDelivery: null,
-      };
-    });
+  completeDelivery: async () => {
+    const { activeDelivery } = get();
+    if (!activeDelivery) return;
+    
+    try {
+      await apiService.delivery.completeOrder(activeDelivery.id);
+      
+      set((state) => {
+        // Optimistic update - in reality, we should fetch fresh stats
+        const earnings = state.activeDelivery?.earnings || 0;
+        return {
+          stats: {
+            ...state.stats,
+            totalDeliveries: state.stats.totalDeliveries + 1,
+            todayDeliveries: state.stats.todayDeliveries + 1,
+            totalEarnings: Number((state.stats.totalEarnings + earnings).toFixed(2)),
+            todayEarnings: Number((state.stats.todayEarnings + earnings).toFixed(2)),
+          },
+          activeDelivery: null,
+        };
+      });
+      
+      // Fetch fresh stats to be sure
+      get().loadStats();
+    } catch (e) {
+      console.error('Failed to complete delivery', e);
+    }
   },
 
   updateDriverLocation: async (latitude, longitude) => {
