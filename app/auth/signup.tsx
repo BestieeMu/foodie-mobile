@@ -171,23 +171,6 @@ const styles = StyleSheet.create({
     padding: 4,
     marginBottom: 24,
   },
-  roleButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-  roleButtonActive: {
-    backgroundColor: '#FF6B35',
-  },
-  roleButtonText: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: '#718096',
-  },
-  roleButtonTextActive: {
-    color: '#FFFFFF',
-  },
   form: {
     gap: 20,
   },
