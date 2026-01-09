@@ -220,7 +220,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#718096',
   },
-  linkText: {
+  inputIcon: {
+    marginRight: 12,
+  },
+  footerLink: {
     fontSize: 15,
     color: '#FF6B35',
     fontWeight: '600' as const,
