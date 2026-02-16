@@ -3,9 +3,14 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useAuthStore } from "@/stores/authStore";
+import { useOrderStore } from "@/stores/orderStore";
+import { useDeliveryStore } from "@/stores/deliveryStore";
+import { socketService } from "@/services/socket";
 import * as NavigationBar from "expo-navigation-bar";
-import { Platform } from "react-native";
+import { Platform, View, ActivityIndicator } from "react-native";
+import { StatusBar } from "expo-status-bar";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -13,12 +18,32 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const router = useRouter();
-  const segments = useSegments();
-  const { isAuthenticated, isLoading, hasCompletedOnboarding, user, loadUser } = useAuthStore();
+  const segments = useSegments() as string[];
+  const { isAuthenticated, isLoading, user, loadUser } = useAuthStore();
+  const { initSocketListeners: initOrderListeners, cleanupSocketListeners: cleanupOrderListeners } = useOrderStore();
+  const { initSocketListeners: initDeliveryListeners, cleanupSocketListeners: cleanupDeliveryListeners } = useDeliveryStore();
 
   useEffect(() => {
     loadUser();
   }, [loadUser]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      socketService.connect();
+      initOrderListeners();
+      initDeliveryListeners();
+    } else {
+      cleanupOrderListeners();
+      cleanupDeliveryListeners();
+      socketService.disconnect();
+    }
+  }, [isAuthenticated, initOrderListeners, initDeliveryListeners, cleanupOrderListeners, cleanupDeliveryListeners]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -46,6 +71,14 @@ function RootLayoutNav() {
     }
   }, [isAuthenticated, isLoading, segments, user, router]);
 
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color="#FF6B35" />
+      </View>
+    );
+  }
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -59,14 +92,14 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useEffect(() => {
-    SplashScreen.hideAsync();
-  }, []);
-
-  useEffect(() => {
     const styleNav = async () => {
       if (Platform.OS === "android") {
-        await NavigationBar.setBackgroundColorAsync("#000000");
-        await NavigationBar.setButtonStyleAsync("light");
+        try {
+          await NavigationBar.setBackgroundColorAsync("#ffffff");
+          await NavigationBar.setButtonStyleAsync("dark");
+        } catch (e) {
+          console.log('NavigationBar error:', e);
+        }
       }
     };
     styleNav();
@@ -74,8 +107,11 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <RootLayoutNav />
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+        <StatusBar style="dark" />
+        <ErrorBoundary>
+          <RootLayoutNav />
+        </ErrorBoundary>
       </GestureHandlerRootView>
     </QueryClientProvider>
   );

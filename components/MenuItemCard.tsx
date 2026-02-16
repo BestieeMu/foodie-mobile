@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Image, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { MenuItem } from '@/types';
 
 interface MenuItemCardProps {
@@ -10,7 +11,13 @@ interface MenuItemCardProps {
 export function MenuItemCard({ item, onPress }: MenuItemCardProps) {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
-      <Image source={{ uri: item.image }} style={styles.image} />
+      <Image 
+        source={item.image} 
+        style={styles.image}
+        contentFit="cover"
+        transition={200}
+        cachePolicy="disk"
+      />
       <View style={styles.content}>
         <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
         <Text style={styles.description} numberOfLines={2}>{item.description}</Text>

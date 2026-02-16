@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Modal, TextInput, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Modal, TextInput, Switch, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Trash2, Plus, Minus, Gift, X } from 'lucide-react-native';
@@ -10,12 +11,19 @@ import { useOrderStore } from '@/stores/orderStore';
 import { useAuthStore } from '@/stores/authStore';
 import { apiService } from '@/services/api';
 
+import * as WebBrowser from 'expo-web-browser';
+
 export default function CartScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { cart, removeItem, updateItemQuantity, clearCart } = useCartStore();
+  const { cart, removeItem, updateItemQuantity, clearCart, taxRate, fetchSettings } = useCartStore();
   const addOrder = useOrderStore((state) => state.addOrder);
   const user = useAuthStore((state) => state.user);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
   const [showSendGiftModal, setShowSendGiftModal] = useState(false);
   const [isGiftOrder, setIsGiftOrder] = useState(false);
   const [giftRecipient, setGiftRecipient] = useState({ name: '', phone: '', address: '' });
@@ -171,7 +179,12 @@ export default function CartScreen() {
           data={cart.items}
           ListHeaderComponent={
             <View style={styles.restaurantHeader}>
-              <Image source={{ uri: cart.restaurant.image }} style={styles.restaurantImage} />
+            <Image
+              source={cart.restaurant.image}
+              style={styles.restaurantImage}
+              contentFit="cover"
+              transition={200}
+            />
               <View style={styles.restaurantInfo}>
                 <Text style={styles.restaurantName}>{cart.restaurant.name}</Text>
                 <Text style={styles.restaurantTime}>{cart.restaurant.deliveryTime}</Text>
@@ -231,7 +244,7 @@ export default function CartScreen() {
                 <Text style={styles.summaryValue}>₦{cart.deliveryFee.toLocaleString()}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>VAT (7.5%)</Text>
+                <Text style={styles.summaryLabel}>VAT ({taxRate}%)</Text>
                 <Text style={styles.summaryValue}>₦{cart.tax.toLocaleString()}</Text>
               </View>
               <View style={[styles.summaryRow, styles.totalRow]}>
@@ -557,6 +570,8 @@ export default function CartScreen() {
                             setCurrentStep('address');
                             return;
                           }
+
+                          // 1. Create order with 'pending' payment status
                           const order = await apiService.orders.create({
                             customerId: user!.id,
                             customer: {
@@ -589,6 +604,23 @@ export default function CartScreen() {
                             giftMessage: isGiftOrder ? `Phone: ${giftRecipient.phone} | Address: ${giftRecipient.address}` : undefined,
                             paymentMethod,
                           } as any);
+
+                          if (paymentMethod === 'card') {
+                            // 2. Initialize Paystack payment
+                            const { authorization_url, reference } = await apiService.payment.initialize(order.total, order.id);
+                            
+                            // 3. Open Paystack Checkout
+                            await WebBrowser.openBrowserAsync(authorization_url);
+                            
+                            // 4. Verify payment after browser closes
+                            const verification = await apiService.payment.verify(reference);
+                            if (verification.status === 'success') {
+                                Alert.alert('Success', 'Payment successful! Your order is being processed.');
+                            } else {
+                                Alert.alert('Payment Pending', 'Your payment is being verified. You can check order status in history.');
+                            }
+                          }
+
                           addOrder(order);
                           clearCart();
                           setShowCheckoutModal(false);

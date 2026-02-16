@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { Order, OrderStatus } from '@/types';
+import { apiService } from '@/services/api';
+import { socketService } from '@/services/socket';
 
 interface OrderState {
   orders: Order[];
@@ -10,6 +12,8 @@ interface OrderState {
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   setActiveOrder: (order: Order | null) => void;
   loadOrders: (userId: string) => Promise<void>;
+  initSocketListeners: () => void;
+  cleanupSocketListeners: () => void;
 }
 
 export const useOrderStore = create<OrderState>((set) => ({
@@ -17,6 +21,32 @@ export const useOrderStore = create<OrderState>((set) => ({
   activeOrder: null,
   isLoading: false,
   error: null,
+
+  initSocketListeners: () => {
+    socketService.on('orders:update', (data: { type: string, order: Order }) => {
+      console.log('Order update received:', data);
+      const { type, order } = data;
+      set((state) => {
+        if (type === 'created') {
+          // Prevent duplicates
+          if (state.orders.some(o => o.id === order.id)) return state;
+          return { 
+            orders: [order, ...state.orders],
+            activeOrder: order 
+          };
+        } else if (type === 'updated') {
+          const updatedOrders = state.orders.map(o => o.id === order.id ? order : o);
+          const activeOrder = state.activeOrder?.id === order.id ? order : state.activeOrder;
+          return { orders: updatedOrders, activeOrder };
+        }
+        return state;
+      });
+    });
+  },
+
+  cleanupSocketListeners: () => {
+    socketService.off('orders:update');
+  },
 
   addOrder: (order) => {
     set((state) => ({

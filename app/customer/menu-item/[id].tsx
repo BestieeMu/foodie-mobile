@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, TextInput, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Animated } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { Minus, Plus, Check } from 'lucide-react-native';
@@ -102,7 +103,13 @@ export default function MenuItemDetailScreen() {
       <HeaderBar title={item.name} onBack={() => router.replace(`/customer/restaurant/${restaurant.id}` as any)} />
       <View style={styles.container}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Image source={{ uri: item.image }} style={styles.image} />
+          <Image 
+            source={item.image} 
+            style={styles.image}
+            contentFit="cover"
+            transition={300}
+            cachePolicy="disk"
+          />
           
           <View style={styles.content}>
             <Text style={styles.name}>{item.name}</Text>

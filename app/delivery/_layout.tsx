@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { List, MapPin, DollarSign, User } from "lucide-react-native";
+import { List, MapPin, DollarSign, User, Wallet } from "lucide-react-native";
 import React from "react";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -45,6 +45,13 @@ export default function DeliveryLayout() {
         options={{
           title: "Earnings",
           tabBarIcon: ({ color, size }) => <DollarSign size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="wallet"
+        options={{
+          title: "Wallet",
+          tabBarIcon: ({ color, size }) => <Wallet size={size} color={color} />,
         }}
       />
       <Tabs.Screen

@@ -24,9 +24,16 @@ import { HeaderBar } from '@/components/HeaderBar';
 
 export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { orders, setActiveOrder } = useOrderStore();
+  const { orders, setActiveOrder, initSocketListeners, cleanupSocketListeners } = useOrderStore();
 
   const order = orders.find(o => o.id === id);
+
+  useEffect(() => {
+    initSocketListeners();
+    return () => {
+      cleanupSocketListeners();
+    };
+  }, [initSocketListeners, cleanupSocketListeners]);
 
   useEffect(() => {
     if (order) {

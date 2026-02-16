@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { Star, Clock, Bike } from 'lucide-react-native';
 import { Restaurant, MenuItem } from '@/types';
@@ -43,7 +45,13 @@ export default function RestaurantDetailScreen() {
       <HeaderBar title={restaurant.name} />
       <View style={styles.container}>
         <ScrollView showsVerticalScrollIndicator={false}>
-          <Image source={{ uri: restaurant.image }} style={styles.image} />
+          <Image 
+            source={restaurant.image} 
+            style={styles.image}
+            contentFit="cover"
+            transition={300}
+            cachePolicy="disk"
+          />
           
           <View style={styles.content}>
             <Text style={styles.name}>{restaurant.name}</Text>

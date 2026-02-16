@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Phone } from 'lucide-react-native';
 
@@ -32,13 +32,20 @@ import * as Location from 'expo-location';
 import { getRouteBetween } from '@/services/directions';
 
 export default function ActiveDeliveryScreen() {
-  const { activeDelivery, completeDelivery, setActiveDeliveryStatus, updateDriverLocation } = useDeliveryStore();
+  const { activeDelivery, completeDelivery, setActiveDeliveryStatus, updateDriverLocation, initSocketListeners, cleanupSocketListeners } = useDeliveryStore();
 
   const mapRef = useRef<typeof MapView | null>(null);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const [routeCoords, setRouteCoords] = useState<LatLng[]>([]);
   const lastDriverLoc = useRef<LatLng | null>(null);
   const [locSub, setLocSub] = useState<Location.LocationSubscription | null>(null);
+
+  useEffect(() => {
+    initSocketListeners();
+    return () => {
+      cleanupSocketListeners();
+    };
+  }, [initSocketListeners, cleanupSocketListeners]);
 
   // Helper to compute distance in meters
   const distanceMeters = (a: LatLng, b: LatLng) => {
@@ -164,6 +171,18 @@ export default function ActiveDeliveryScreen() {
       setActiveDeliveryStatus('picked_up');
     } else if (activeDelivery.status === 'picked_up') {
       setActiveDeliveryStatus('on_the_way');
+      const dest = activeDelivery.deliveryLocation;
+      if (dest?.latitude && dest?.longitude) {
+        const lat = dest.latitude;
+        const lon = dest.longitude;
+        const label = encodeURIComponent(dest.address || 'Delivery Destination');
+        const google = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
+        const apple = `http://maps.apple.com/?daddr=${lat},${lon}&dirflg=d`;
+        const url = Platform.select({ ios: apple, android: google, default: google });
+        if (url) {
+          Linking.openURL(url).catch(() => {});
+        }
+      }
     } else if (activeDelivery.status === 'on_the_way') {
       setActiveDeliveryStatus('delivered');
       completeDelivery();

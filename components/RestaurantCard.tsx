@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Image, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { Star, Clock, Bike } from 'lucide-react-native';
 import { Restaurant } from '@/types';
 
@@ -12,12 +13,14 @@ export function RestaurantCard({ restaurant, onPress }: RestaurantCardProps) {
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
       <Image
-        source={{
-          uri:
-            restaurant?.image ||
-            'https://images.unsplash.com/photo-1526318472351-c75fcf070305?w=1200&auto=format&fit=crop&q=60',
-        }}
+        source={
+          restaurant?.image ||
+          'https://images.unsplash.com/photo-1526318472351-c75fcf070305?w=1200&auto=format&fit=crop&q=60'
+        }
         style={styles.image}
+        contentFit="cover"
+        transition={300}
+        cachePolicy="disk"
       />
       {restaurant && !restaurant.isOpen && (
         <View style={styles.closedOverlay}>

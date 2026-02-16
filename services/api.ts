@@ -4,8 +4,8 @@ import Constants from 'expo-constants';
 import { Restaurant, MenuItem, Order, DeliveryOrder, Address, UserRole, User } from '@/types';
 
 const defaultBase = Platform.OS === 'android'
-  ? 'http://10.0.2.2:4003/api'
-  : 'http://localhost:4003/api';
+  ? 'http://10.0.2.2:4004/api'
+  : 'http://localhost:4004/api';
 
 const getBaseUrl = () => {
   // 1. Check environment variable first
@@ -19,13 +19,13 @@ const getBaseUrl = () => {
   // 2. Dynamic host detection for Expo Go (Development)
   if (Constants.expoConfig?.hostUri) {
     const host = Constants.expoConfig.hostUri.split(':')[0];
-    return `http://${host}:4003/api`;
+    return `http://${host}:4004/api`;
   }
 
   // 3. Fallbacks
   return Platform.OS === 'android'
-    ? 'http://10.0.2.2:4003/api' // Android Emulator loopback
-    : 'http://localhost:4003/api'; // iOS Simulator / Web
+    ? 'http://10.0.2.2:4004/api' // Android Emulator loopback
+    : 'http://localhost:4004/api'; // iOS Simulator / Web
 };
 
 const BASE_URL = getBaseUrl();
@@ -150,6 +150,22 @@ export const apiService = {
     check: async (): Promise<{ ok: boolean; env: string }> => {
       return request('/health');
     },
+  },
+
+  payment: {
+    initialize: (amount: number, orderId: string) =>
+      request<{ authorization_url: string; reference: string }>('/payment/initialize', {
+        method: 'POST',
+        body: JSON.stringify({ amount, orderId }),
+      }),
+    verify: (reference: string) =>
+      request<{ status: string; order?: any }>(`/payment/verify/${reference}`),
+  },
+
+  system: {
+    getSettings: async (): Promise<{ tax_rate: number; commission_rate: number; currency: string; delivery_fee: number }> => {
+        return request('/settings');
+    }
   },
 
   restaurants: {
@@ -476,6 +492,24 @@ export const apiService = {
         }),
       });
       return res.order;
+    },
+  },
+
+  wallet: {
+    getWallet: async (): Promise<{ id: string; balance: number; currency: string; paystack_virtual_account?: any }> => {
+      return request('/wallet');
+    },
+    getTransactions: async (): Promise<Array<{ id: string; type: 'credit'|'debit'; amount: number; description?: string; created_at: string }>> => {
+      return request('/wallet/transactions');
+    },
+    setup: async (): Promise<{ paystack_virtual_account: any }> => {
+      return request('/wallet/setup', { method: 'POST' });
+    },
+    withdraw: async (amount: number, bank_code: string, account_number: string, account_name?: string): Promise<{ status: string; reference?: string }> => {
+      return request('/wallet/withdraw', {
+        method: 'POST',
+        body: JSON.stringify({ amount, bank_code, account_number, account_name })
+      });
     },
   },
 };

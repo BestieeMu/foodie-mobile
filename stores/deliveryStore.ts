@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { DeliveryOrder, DeliveryStats, OrderStatus } from '@/types';
 import { apiService } from '@/services/api';
+import { socketService } from '@/services/socket';
 
 interface DeliveryState {
   availableOrders: DeliveryOrder[];
@@ -15,6 +16,8 @@ interface DeliveryState {
   setActiveDeliveryStatus: (status: OrderStatus) => void;
   setOnline: (online: boolean) => void;
   toggleOnline: () => void;
+  initSocketListeners: () => void;
+  cleanupSocketListeners: () => void;
 }
 
 export const useDeliveryStore = create<DeliveryState>((set, get) => ({
@@ -30,6 +33,49 @@ export const useDeliveryStore = create<DeliveryState>((set, get) => ({
     weeklyEarnings: [],
   },
   isOnline: true,
+
+  initSocketListeners: () => {
+    socketService.on('orders:update', (data: { type: string, order: DeliveryOrder }) => {
+      console.log('Delivery order update received:', data);
+      const { type, order } = data;
+      set((state) => {
+        if (type === 'created') {
+          // Add new available order
+          if (state.availableOrders.some(o => o.id === order.id)) return state;
+          return { availableOrders: [order, ...state.availableOrders] };
+        } else if (type === 'updated') {
+          // Update existing order in available orders or active delivery
+          const updatedAvailableOrders = state.availableOrders.map(o => o.id === order.id ? order : o);
+          const activeOrder = state.activeDelivery?.id === order.id ? order : state.activeDelivery;
+          return { availableOrders: updatedAvailableOrders, activeDelivery: activeOrder };
+        }
+        return state;
+      });
+    });
+
+    socketService.on('delivery:update', (data: { type: string, delivery: DeliveryOrder }) => {
+      console.log('Delivery update received:', data);
+      const { type, delivery } = data;
+      set((state) => {
+        if (type === 'assigned') {
+          // Add to active delivery
+          return { activeDelivery: delivery };
+        } else if (type === 'completed') {
+          // Remove from active delivery
+          return { activeDelivery: null };
+        } else if (type === 'updated') {
+          // Update active delivery
+          return { activeDelivery: state.activeDelivery?.id === delivery.id ? delivery : state.activeDelivery };
+        }
+        return state;
+      });
+    });
+  },
+
+  cleanupSocketListeners: () => {
+    socketService.off('orders:update');
+    socketService.off('delivery:update');
+  },
 
   loadStats: async () => {
     try {

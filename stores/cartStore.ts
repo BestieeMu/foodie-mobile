@@ -1,8 +1,11 @@
 import { create } from 'zustand';
 import { Cart, CartItem, MenuItem, Restaurant } from '@/types';
+import { apiService } from '@/services/api';
 
 interface CartState {
   cart: Cart | null;
+  taxRate: number; // Percentage, e.g. 5 for 5%
+  fetchSettings: () => Promise<void>;
   addItem: (restaurant: Restaurant, menuItem: MenuItem, quantity: number, selectedOptions: { groupId: string; optionId: string }[], specialInstructions?: string) => void;
   removeItem: (itemId: string) => void;
   updateItemQuantity: (itemId: string, quantity: number) => void;
@@ -12,6 +15,18 @@ interface CartState {
 
 export const useCartStore = create<CartState>((set, get) => ({
   cart: null,
+  taxRate: 5, // Default 5%
+
+  fetchSettings: async () => {
+    try {
+        const settings = await apiService.system.getSettings();
+        if (settings && typeof settings.tax_rate === 'number') {
+            set({ taxRate: settings.tax_rate });
+        }
+    } catch (error) {
+        console.log('Failed to fetch settings', error);
+    }
+  },
 
   getCartItemPrice: (menuItem: MenuItem, selectedOptions: { groupId: string; optionId: string }[]) => {
     let price = menuItem.price;
@@ -28,7 +43,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   addItem: (restaurant, menuItem, quantity, selectedOptions, specialInstructions) => {
-    const { cart } = get();
+    const { cart, taxRate } = get();
     const itemPrice = get().getCartItemPrice(menuItem, selectedOptions);
 
     const newItem: CartItem = {
@@ -43,7 +58,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     if (!cart || cart.restaurantId !== restaurant.id) {
       const subtotal = itemPrice * quantity;
       const deliveryFee = restaurant.deliveryFee;
-      const tax = subtotal * 0.08;
+      const tax = subtotal * (taxRate / 100);
       const total = subtotal + deliveryFee + tax;
 
       set({
@@ -60,7 +75,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     } else {
       const updatedItems = [...cart.items, newItem];
       const subtotal = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      const tax = subtotal * 0.08;
+      const tax = subtotal * (taxRate / 100);
       const total = subtotal + cart.deliveryFee + tax;
 
       set({
@@ -76,7 +91,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   removeItem: (itemId) => {
-    const { cart } = get();
+    const { cart, taxRate } = get();
     if (!cart) return;
 
     const updatedItems = cart.items.filter(item => item.id !== itemId);
@@ -85,7 +100,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       set({ cart: null });
     } else {
       const subtotal = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      const tax = subtotal * 0.08;
+      const tax = subtotal * (taxRate / 100);
       const total = subtotal + cart.deliveryFee + tax;
 
       set({
@@ -101,7 +116,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   updateItemQuantity: (itemId, quantity) => {
-    const { cart } = get();
+    const { cart, taxRate } = get();
     if (!cart) return;
 
     if (quantity <= 0) {
@@ -114,7 +129,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     );
 
     const subtotal = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const tax = subtotal * 0.08;
+    const tax = subtotal * (taxRate / 100);
     const total = subtotal + cart.deliveryFee + tax;
 
     set({

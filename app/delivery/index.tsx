@@ -8,11 +8,15 @@ import {Button} from '@/components/Button';
 
 export default function DeliveryQueueScreen() {
   const router = useRouter();
-  const { availableOrders, acceptOrder, loadAvailableOrders, isOnline } = useDeliveryStore();
+  const { availableOrders, acceptOrder, loadAvailableOrders, isOnline, initSocketListeners, cleanupSocketListeners } = useDeliveryStore();
 
   useEffect(() => {
     loadAvailableOrders();
-  }, [loadAvailableOrders]);
+    initSocketListeners();
+    return () => {
+      cleanupSocketListeners();
+    };
+  }, [loadAvailableOrders, initSocketListeners, cleanupSocketListeners]);
 
   const renderItem = ({ item }: any) => (
     <View style={styles.card}>
