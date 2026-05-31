@@ -25,7 +25,7 @@ export default function DeliveryQueueScreen() {
           <PackageCheck size={18} color="#2D3748" />
           <Text style={styles.cardTitle}>Order #{item.id}</Text>
         </View>
-        <Text style={styles.earning}>${Number(item?.earnings ?? 0).toFixed(2)}</Text>
+        <Text style={styles.earning}>₦{Number(item?.earnings ?? 0).toFixed(2)}</Text>
       </View>
       <View style={styles.row}>
         <MapPin size={16} color="#4A5568" />

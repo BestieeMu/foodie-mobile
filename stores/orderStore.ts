@@ -12,6 +12,7 @@ interface OrderState {
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   setActiveOrder: (order: Order | null) => void;
   loadOrders: (userId: string) => Promise<void>;
+  cancelOrder: (orderId: string) => Promise<void>;
   initSocketListeners: () => void;
   cleanupSocketListeners: () => void;
 }
@@ -75,6 +76,23 @@ export const useOrderStore = create<OrderState>((set) => ({
       set({ orders, isLoading: false });
     } catch (error) {
       set({ error: (error as Error).message, isLoading: false });
+    }
+  },
+
+  cancelOrder: async (orderId) => {
+    try {
+      await apiService.orders.cancel(orderId);
+      set((state) => ({
+        orders: state.orders.map(order =>
+          order.id === orderId ? { ...order, status: 'cancelled', updatedAt: new Date() } : order
+        ),
+        activeOrder: state.activeOrder?.id === orderId
+          ? { ...state.activeOrder, status: 'cancelled', updatedAt: new Date() }
+          : state.activeOrder,
+      }));
+    } catch (error) {
+      set({ error: (error as Error).message });
+      throw error;
     }
   },
 }));

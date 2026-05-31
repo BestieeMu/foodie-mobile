@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Clock, MapPin, Package } from 'lucide-react-native';
-import { Platform } from 'react-native';
+import { Platform, Alert, TouchableOpacity } from 'react-native';
+import { useCartStore } from '@/stores/cartStore';
 
 let MapView: any;
 let Marker: any;
@@ -24,9 +25,58 @@ import { HeaderBar } from '@/components/HeaderBar';
 
 export default function OrderTrackingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { orders, setActiveOrder, initSocketListeners, cleanupSocketListeners } = useOrderStore();
+  const router = useRouter();
+  const { orders, setActiveOrder, initSocketListeners, cleanupSocketListeners, cancelOrder } = useOrderStore();
+  const { addItem, clearCart } = useCartStore();
 
   const order = orders.find(o => o.id === id);
+
+  const handleCancel = () => {
+    Alert.alert('Cancel Order', 'Are you sure you want to cancel this order?', [
+      { text: 'No', style: 'cancel' },
+      { 
+        text: 'Yes, Cancel', 
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await cancelOrder(id as string);
+            Alert.alert('Success', 'Order cancelled successfully');
+          } catch (e: any) {
+            Alert.alert('Error', e.message || 'Failed to cancel order');
+          }
+        }
+      }
+    ]);
+  };
+
+  const handleReorder = () => {
+    if (!order) return;
+    clearCart();
+    // Re-add items
+    order.items.forEach((item: any) => {
+      // Create a dummy options array based on what's available if needed, or simply push the item
+      const cartItem = {
+        id: Math.random().toString(36).substring(7),
+        menuItem: item.menuItem || { id: item.itemId, name: item.name || 'Item', price: item.price, category: 'Menu', isAvailable: true },
+        quantity: item.quantity,
+        price: item.price ?? item.menuItem?.price ?? 0,
+        selectedOptions: [], // Basic implementation without complex options for reorder
+      };
+      // We push manually to cart store since we might not have all complex option details
+      useCartStore.getState().cart?.items.push(cartItem as any);
+      // update totals
+    });
+    // A better way is using addItem for each, but we might not have the raw MenuItem object if it's missing from the order response.
+    // Assuming backend returns enough info in item.menuItem:
+    if (useCartStore.getState().cart) {
+      const state = useCartStore.getState();
+      state.updateItemQuantity(state.cart!.items[0]?.id, state.cart!.items[0]?.quantity); // hack to trigger recalculation
+    }
+    Alert.alert('Cart Updated', 'Items added to your cart!', [
+      { text: 'View Cart', onPress: () => router.push('/customer/cart') },
+      { text: 'Continue', style: 'cancel' }
+    ]);
+  };
 
   useEffect(() => {
     initSocketListeners();
@@ -159,9 +209,22 @@ export default function OrderTrackingScreen() {
                 <View key={item.id} style={styles.orderItem}>
                   <Text style={styles.orderItemQuantity}>{item.quantity}x</Text>
                   <Text style={styles.orderItemName}>{item?.menuItem?.name ?? item?.name ?? ''}</Text>
-                  <Text style={styles.orderItemPrice}>${Number((item.price ?? (item.menuItem?.price ?? 0)) * item.quantity).toFixed(2)}</Text>
+                  <Text style={styles.orderItemPrice}>₦{Number((item.price ?? (item.menuItem?.price ?? 0)) * item.quantity).toFixed(2)}</Text>
                 </View>
               ))}
+            </View>
+
+            <View style={styles.actionButtons}>
+              {(order.status === 'pending' || order.status === 'confirmed') && (
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                  <Text style={styles.cancelButtonText}>Cancel Order</Text>
+                </TouchableOpacity>
+              )}
+              {(order.status === 'delivered' || order.status === 'cancelled') && (
+                <TouchableOpacity style={styles.reorderButton} onPress={handleReorder}>
+                  <Text style={styles.reorderButtonText}>Reorder Items</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </ScrollView>
         </SafeAreaView>
@@ -307,5 +370,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     color: '#1A202C',
+  },
+  actionButtons: {
+    marginTop: 16,
+    marginBottom: 32,
+    gap: 12,
+  },
+  cancelButton: {
+    backgroundColor: '#FFF5F5',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FED7D7',
+  },
+  cancelButtonText: {
+    color: '#E53E3E',
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  reorderButton: {
+    backgroundColor: '#FF6B35',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  reorderButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700' as const,
   },
 });

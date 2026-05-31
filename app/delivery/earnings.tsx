@@ -12,7 +12,7 @@ export default function EarningsScreen() {
     {
       icon: DollarSign,
       label: 'Today Earnings',
-      value: `$${stats.todayEarnings.toFixed(2)}`,
+      value: `₦${stats.todayEarnings.toFixed(2)}`,
       color: '#48BB78',
       bgColor: '#F0FFF4',
     },
@@ -26,7 +26,7 @@ export default function EarningsScreen() {
     {
       icon: TrendingUp,
       label: 'Total Earnings',
-      value: `$${stats.totalEarnings.toFixed(2)}`,
+      value: `₦${stats.totalEarnings.toFixed(2)}`,
       color: '#FF6B35',
       bgColor: '#FFF5F0',
     },
@@ -50,7 +50,7 @@ export default function EarningsScreen() {
         <View style={styles.topSummary}>
           <View style={styles.summaryStat}>
             <Text style={styles.summaryStatLabel}>Today's Earnings</Text>
-            <Text style={styles.summaryStatValue}>{`$${stats.todayEarnings.toFixed(2)}`}</Text>
+            <Text style={styles.summaryStatValue}>{`₦${stats.todayEarnings.toFixed(2)}`}</Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryStat}>
@@ -63,7 +63,7 @@ export default function EarningsScreen() {
           <Text style={styles.summaryTitle}>Performance</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Earnings</Text>
-            <Text style={styles.summaryValue}>{`$${stats.totalEarnings.toFixed(2)}`}</Text>
+            <Text style={styles.summaryValue}>{`₦${stats.totalEarnings.toFixed(2)}`}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Average Rating</Text>

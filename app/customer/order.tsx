@@ -70,7 +70,7 @@ export default function OrdersScreen() {
 
             <View style={styles.orderFooter}>
               <Text style={styles.itemCount}>{item.items.length} items</Text>
-              <Text style={styles.totalPrice}>${item.total.toFixed(2)}</Text>
+              <Text style={styles.totalPrice}>₦{item.total.toFixed(2)}</Text>
             </View>
           </TouchableOpacity>
         )}

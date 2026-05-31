@@ -4,26 +4,14 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getBaseUrl = () => {
-  // 1. Check environment variable first
-  const envBase = process.env.EXPO_PUBLIC_API_BASE_URL || process.env.EXPO_PUBLIC_API_URL;
-  if (envBase) {
-    // Remove /api if present
-    const base = envBase.replace('/api', '');
-    return Platform.OS === 'android' && base.includes('localhost')
-      ? base.replace('localhost', '10.0.2.2')
-      : base;
+  const envBase = process.env.EXPO_PUBLIC_SOCKET_URL;
+  if (!envBase) {
+    console.warn("EXPO_PUBLIC_SOCKET_URL is not set in .env! Defaulting to localhost.");
+    return Platform.OS === 'android' ? 'http://10.0.2.2:4004' : 'http://localhost:4004';
   }
-
-  // 2. Dynamic host detection for Expo Go (Development)
-  if (Constants.expoConfig?.hostUri) {
-    const host = Constants.expoConfig.hostUri.split(':')[0];
-    return `http://${host}:4004`;
-  }
-
-  // 3. Fallbacks
-  return Platform.OS === 'android'
-    ? 'http://10.0.2.2:4004'
-    : 'http://localhost:4004';
+  return Platform.OS === 'android' && envBase.includes('localhost')
+    ? envBase.replace('localhost', '10.0.2.2')
+    : envBase;
 };
 
 const SOCKET_URL = getBaseUrl();

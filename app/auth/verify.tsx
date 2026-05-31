@@ -15,6 +15,8 @@ export default function VerifyOtpScreen() {
   const inputs = useRef<Array<TextInput | null>>([]);
   const [timer, setTimer] = useState(60);
 
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setTimer((prev) => (prev > 0 ? prev - 1 : 0));
@@ -29,22 +31,29 @@ export default function VerifyOtpScreen() {
       return;
     }
 
+    setLoading(true);
     try {
       await verifyOtp(email!, otp);
       // Navigation handled by auth listener
     } catch (error) {
       Alert.alert('Verification Failed', (error as Error).message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleResend = async () => {
     if (timer > 0) return;
+    
+    setLoading(true);
     try {
       await resendOtp(email!);
       setTimer(60);
       Alert.alert('Success', 'Code resent successfully');
     } catch (error) {
       Alert.alert('Error', 'Failed to resend code');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,7 +105,7 @@ export default function VerifyOtpScreen() {
             {code.map((digit, index) => (
               <TextInput
                 key={index}
-                ref={(ref) => (inputs.current[index] = ref)}
+                ref={(ref) => { inputs.current[index] = ref; }}
                 style={styles.otpInput}
                 value={digit}
                 onChangeText={(text) => handleChangeText(text, index)}
@@ -111,7 +120,7 @@ export default function VerifyOtpScreen() {
           <Button 
             title="Verify" 
             onPress={handleVerify} 
-            loading={isLoading}
+            loading={loading}
             size="large"
           />
 

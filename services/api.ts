@@ -3,29 +3,15 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { Restaurant, MenuItem, Order, DeliveryOrder, Address, UserRole, User } from '@/types';
 
-const defaultBase = Platform.OS === 'android'
-  ? 'http://10.0.2.2:4004/api'
-  : 'http://localhost:4004/api';
-
 const getBaseUrl = () => {
-  // 1. Check environment variable first
-  const envBase = process.env.EXPO_PUBLIC_API_BASE_URL || process.env.EXPO_PUBLIC_API_URL;
-  if (envBase) {
-    return Platform.OS === 'android' && envBase.includes('localhost')
-      ? envBase.replace('localhost', '10.0.2.2')
-      : envBase;
+  const envBase = process.env.EXPO_PUBLIC_API_BASE_URL;
+  if (!envBase) {
+    console.warn("EXPO_PUBLIC_API_BASE_URL is not set in .env! Defaulting to localhost.");
+    return Platform.OS === 'android' ? 'http://10.0.2.2:4004/api' : 'http://localhost:4004/api';
   }
-
-  // 2. Dynamic host detection for Expo Go (Development)
-  if (Constants.expoConfig?.hostUri) {
-    const host = Constants.expoConfig.hostUri.split(':')[0];
-    return `http://${host}:4004/api`;
-  }
-
-  // 3. Fallbacks
-  return Platform.OS === 'android'
-    ? 'http://10.0.2.2:4004/api' // Android Emulator loopback
-    : 'http://localhost:4004/api'; // iOS Simulator / Web
+  return Platform.OS === 'android' && envBase.includes('localhost')
+    ? envBase.replace('localhost', '10.0.2.2')
+    : envBase;
 };
 
 const BASE_URL = getBaseUrl();
@@ -58,17 +44,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     });
   } catch (e: any) {
     console.log('API NETWORK ERROR', { url, message: e?.message });
-    const fallbackUrl =
-      BASE_URL !== defaultBase ? `${defaultBase}${path}` : null;
-    if (fallbackUrl) {
-      console.log('API RETRY VIA DEFAULT BASE', { fallbackUrl, method: options.method || 'GET' });
-      res = await fetch(fallbackUrl, {
-        ...options,
-        headers,
-      });
-    } else {
-      throw e;
-    }
+    throw e;
   }
 
   if (res.status === 401) {
@@ -382,6 +358,12 @@ export const apiService = {
     },
     getUserOrders: async (userId: string): Promise<Order[]> => {
       return request(`/orders/user/${encodeURIComponent(userId)}`);
+    },
+    cancel: async (orderId: string): Promise<void> => {
+      return request(`/orders/${orderId}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'cancelled' }),
+      });
     },
   },
 

@@ -7,6 +7,7 @@ import { Trash2, Plus, Minus, Gift, X } from 'lucide-react-native';
 import { useCartStore } from '@/stores/cartStore';
 import { Button } from '@/components/Button';
 import { HeaderBar } from '@/components/HeaderBar';
+import { SuccessModal } from '@/components/SuccessModal';
 import { useOrderStore } from '@/stores/orderStore';
 import { useAuthStore } from '@/stores/authStore';
 import { apiService } from '@/services/api';
@@ -38,6 +39,8 @@ export default function CartScreen() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'wallet' | 'cash'>('card');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successModalConfig, setSuccessModalConfig] = useState({ title: '', message: '', orderId: '' });
 
   const loadAddresses = async () => {
     try {
@@ -121,7 +124,12 @@ export default function CartScreen() {
       addOrder(order);
       clearCart();
       setShowGroupOrderModal(false);
-      router.push(`/customer/order/${order.id}` as any);
+      setSuccessModalConfig({
+        title: 'Order Placed!',
+        message: 'Your group order has been finalized and sent to the restaurant.',
+        orderId: order.id,
+      });
+      setShowSuccessModal(true);
     } catch (err: any) {
       Alert.alert('Failed to finalize', err?.message || 'Try again.');
     }
@@ -615,7 +623,7 @@ export default function CartScreen() {
                             // 4. Verify payment after browser closes
                             const verification = await apiService.payment.verify(reference);
                             if (verification.status === 'success') {
-                                Alert.alert('Success', 'Payment successful! Your order is being processed.');
+                                // Handled in SuccessModal
                             } else {
                                 Alert.alert('Payment Pending', 'Your payment is being verified. You can check order status in history.');
                             }
@@ -624,7 +632,23 @@ export default function CartScreen() {
                           addOrder(order);
                           clearCart();
                           setShowCheckoutModal(false);
-                          router.push(`/customer/order/${order.id}` as any);
+                          
+                          let successTitle = 'Order Placed!';
+                          let successMessage = 'Your order is being processed by the restaurant.';
+                          if (paymentMethod === 'card') {
+                            successTitle = 'Payment Successful!';
+                            successMessage = 'Your order has been paid and is being processed.';
+                          } else if (isGiftOrder) {
+                            successTitle = 'Gift Sent!';
+                            successMessage = `Your gift order for ${giftRecipient.name} is on its way.`;
+                          }
+
+                          setSuccessModalConfig({
+                            title: successTitle,
+                            message: successMessage,
+                            orderId: order.id,
+                          });
+                          setShowSuccessModal(true);
                         } catch (e: any) {
                           Alert.alert('Checkout failed', e?.message || 'Please try again.');
                         }
@@ -638,6 +662,19 @@ export default function CartScreen() {
             </View>
           </View>
         </Modal>
+
+        <SuccessModal
+          visible={showSuccessModal}
+          title={successModalConfig.title}
+          message={successModalConfig.message}
+          actionText="Track Order"
+          onClose={() => {
+            setShowSuccessModal(false);
+            if (successModalConfig.orderId) {
+              router.push(`/customer/order/${successModalConfig.orderId}` as any);
+            }
+          }}
+        />
 
       </View>
     </>

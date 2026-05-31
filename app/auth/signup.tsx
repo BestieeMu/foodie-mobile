@@ -10,13 +10,13 @@ export default function SignUpScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const signup = useAuthStore((state) => state.signup);
-  const isLoading = useAuthStore((state) => state.isLoading);
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   // Default to customer, but allow overriding via params if we came from a specific flow
   const [role, setRole] = useState<UserRole>((params.role as UserRole) || 'customer');
@@ -27,12 +27,15 @@ export default function SignUpScreen() {
       return;
     }
 
+    setLoading(true);
     try {
       await signup({ name, email, password, phone, role });
       // If signup is successful (and requires verification), navigate to OTP screen
       router.push({ pathname: '/auth/verify', params: { email } });
     } catch (error) {
       Alert.alert('Sign Up Failed', (error as Error).message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,61 +73,73 @@ export default function SignUpScreen() {
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <User size={20} color="#A0AEC0" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Full Name"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-              />
+              <Text style={styles.label}>Full Name</Text>
+              <View style={styles.inputWrapper}>
+                <User size={20} color="#A0AEC0" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.inputText}
+                  placeholder="John Doe"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                />
+              </View>
             </View>
 
             <View style={styles.inputContainer}>
-              <Mail size={20} color="#A0AEC0" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Email Address"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+              <Text style={styles.label}>Email Address</Text>
+              <View style={styles.inputWrapper}>
+                <Mail size={20} color="#A0AEC0" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.inputText}
+                  placeholder="john@example.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
             </View>
 
             <View style={styles.inputContainer}>
-              <Phone size={20} color="#A0AEC0" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Phone Number"
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-              />
+              <Text style={styles.label}>Phone Number</Text>
+              <View style={styles.inputWrapper}>
+                <Phone size={20} color="#A0AEC0" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.inputText}
+                  placeholder="+1 234 567 8900"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                />
+              </View>
             </View>
 
             <View style={styles.inputContainer}>
-              <Lock size={20} color="#A0AEC0" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                {showPassword ? (
-                  <EyeOff size={20} color="#A0AEC0" />
-                ) : (
-                  <Eye size={20} color="#A0AEC0" />
-                )}
-              </TouchableOpacity>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordRow}>
+                <Lock size={20} color="#A0AEC0" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="••••••••"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+                  {showPassword ? (
+                    <EyeOff size={20} color="#A0AEC0" />
+                  ) : (
+                    <Eye size={20} color="#A0AEC0" />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
 
             <Button 
               title="Sign Up" 
               onPress={handleSignUp} 
-              loading={isLoading}
+              loading={loading}
               size="large"
             />
           </View>
@@ -182,14 +197,20 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: '#2D3748',
   },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#F7FAFC',
     borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#1A202C',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    paddingHorizontal: 16,
+  },
+  inputText: {
+    flex: 1,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: '#1A202C',
   },
   passwordRow: {
     flexDirection: 'row',
@@ -198,16 +219,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    paddingLeft: 16,
   },
   passwordInput: {
     flex: 1,
-    padding: 16,
+    paddingVertical: 16,
     fontSize: 16,
     color: '#1A202C',
   },
   eyeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   footer: {
     flexDirection: 'row',

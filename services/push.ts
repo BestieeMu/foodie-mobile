@@ -8,6 +8,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -45,7 +47,7 @@ export async function registerForPushNotificationsAsync() {
       ).data;
       return pushTokenString;
     } catch (e: unknown) {
-      alert(`${e}`);
+      console.warn(`Failed to fetch Expo push token (safe to ignore in dev): ${e}`);
     }
   } else {
     // alert('Must use physical device for Push Notifications');
